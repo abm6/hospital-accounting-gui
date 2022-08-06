@@ -241,6 +241,24 @@ class Nurse(User):
         return {"data": vaccinatedStatus, "message": "Vaccinated status updated successfully"} if vaccinatedStatus is not None else {"data": None, "message": "Vaccinated status not updated"}
 
 
+class Dashboard:
+    def __init__(self):
+        pass
+    
+
+    def loginPrompt(self):
+        print("HMS Login")
+        username = input("Username: ")
+        password = input("Password: ")
+        usertype = input("Usertype (admin/receptionist/doctor/nurse): ")
+
+    def showHomepage(self):
+        print("Showing homepage")
+        print("1. Login")
+        
+
+
+
 def main():
     # create connection
     conn = schemas.create_connection('hospital')
