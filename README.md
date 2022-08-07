@@ -1,1 +1,6 @@
-# hospital-accounting-gui
+# CLI VERSION
+
+```
+    python main.py
+```
+
