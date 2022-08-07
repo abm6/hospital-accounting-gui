@@ -72,12 +72,12 @@ def create_tables(cursor):
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS appointment(
-            appointment_number INTEGER NOT NULL,
             receptionist_id INTEGER NOT NULL,
             patient_id INTEGER NOT NULL,
             doctor_id INTEGER NOT NULL,
             accept_date DATE NOT NULL,
-            accept_time TIME NOT NULL,
+            accept_time TEXT ,
+            symptoms TEXT,
             status VARCHAR(10) NOT NULL,
             CONSTRAINT status CHECK (status IN ('pending', 'accepted', 'rejected'))
             CONSTRAINT patient_id FOREIGN KEY (patient_id) REFERENCES patient(rowid),

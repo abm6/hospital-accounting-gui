@@ -1,6 +1,7 @@
 import schemas
 import transactions
 import pprint
+import cli_dashboard
 from datetime import date
 
 import temp_data
@@ -13,9 +14,7 @@ today = date.today()
 day = today.strftime("%Y-%m-%d")
 
 
-# function to clear the console
-def clearConsole(): return os.system('cls'
-                                     if os.name in ('nt', 'dos') else 'clear')
+
 
 
 user_session = {
@@ -23,6 +22,9 @@ user_session = {
     "usertype": "",
     "id": ""
 }
+
+
+
 
 
 class User:
@@ -51,6 +53,13 @@ class User:
         }
         return True
 
+    def getUserSession(self):
+        return user_session
+
+    def setUserSession(self,username, usertype, id):
+        user_session["username"] = username
+        user_session["usertype"] = usertype
+        user_session["id"] = id
 
 class Admin(User):
     def __init__(self):
@@ -82,18 +91,25 @@ class Admin(User):
             return transactions.getUserInfoByUsername(cursor, username)
         return None
 
-    def getAllUsers(self):
+    def getAllUsers(self,usertype=None):
         # fetch all users
-        return transactions.getAllUsers(cursor)
+        return transactions.getAllUsers(cursor,usertype)
 
-    def updateUser(self, user={}):
+    def getAllPatients(self):
+        # fetch all patients
+        return transactions.getAllPatients(cursor)
+
+
+    def updateUser(self,username=None,userid=None, user={}):
         # update user with userId reference
         # returns Updated user data if any changes else returns false
 
-        userBeforeUpdate = self.getUserInfo(username=user['username'])
-        updatedUser = transactions.updateUserByUsername(cursor, user)
+        userBeforeUpdate = self.getUserInfo(username)
 
-        return updatedUser if updatedUser != userBeforeUpdate else False
+
+        updatedUser = transactions.updateUserByUsername(cursor,username=username,userid=userid, user=user)
+
+        return updatedUser if updatedUser != userBeforeUpdate else None
 
 
 class Receptionist(User):
@@ -146,13 +162,18 @@ class Receptionist(User):
         isPatientRemoved = transactions.removePatientById(cursor, patientID)
         return {"data": foundPatient, "message": "Patient removed successfully"} if isPatientRemoved else {"data": None, "message": "Patient not found"}
 
-    def makeAppointment(self, patientID, doctorID, appointmentDate):
-        pass
+    def makeAppointment(self, appointmentData={}):
+        appointment = transactions.makeAppointment(appointmentData)
+        return {"data": appointment, "message": "Appointment made successfully"} if appointment is not None else {"data": None, "message": "Appointment not made"}
 
+    def getAllAppointments(self):
+        return transactions.getAllAppointments(cursor)
+
+    
     def fetchAvailableDoctors(self):
-        availableDoctors = transactions.fetchAvailableDoctors(cursor)
+        availableDoctors = transactions.getAvailableDoctors(cursor,day)
 
-        if availableDoctors is not None or len(availableDoctors) > 0:
+        if availableDoctors is not None and len(availableDoctors) > 0:
             return {"data": availableDoctors, "message": "Doctors fetched successfully"}
         else:
             return {"data": None, "message": "No doctors available"}
@@ -197,13 +218,13 @@ class Doctor(User):
     def getPatientsAppointed(self, patientID=None):
         # returns list of all the patients with their patient ID
         patients = transactions.getPatientsAppointedToDoctor(
-            cursor, user_session['id'], patientID)
-        return {data: patients, message: "These are the patients appointed"} if patients is not None else {"data": None, "message": "No patients appointed"}
+            cursor, doctorID=user_session['id'], patientID=patientID)
+        return {"data": patients, "message": "These are the patients appointed"} if patients is not None else {"data": None, "message": "No patients appointed"}
 
     def getMedicalRecords(self, patientID):
         # returns list of prescriptions, prescriptionID along with their details
         medicalRecords = transactions.getPatientMedicalRecords(
-            cursor, patientID, user_session.id)
+            cursor, patientID=patientID, doctorID=user_session['id'], nurseID=None)
         return {"data": medicalRecords, "message": "These are the medical records"} if medicalRecords is not None else {"data": None, "message": "No medical records"}
 
     def createOrUpdateMedicalRecord(self, medicalRecordData={}):
@@ -223,9 +244,10 @@ class Nurse(User):
     def login(self, username, password):
         return super().login(username, password, "nurse")
 
-    def getPatientSchedule(self):
+    def getPatientMedicalRecords(self):
         # return list
-        return 0
+
+        return transactions.getPatientMedicalRecords(cursor, nurseID=user_session['id'])
 
     def getDrugPrescriptions(self, patientID):
         # return list
@@ -241,21 +263,6 @@ class Nurse(User):
         return {"data": vaccinatedStatus, "message": "Vaccinated status updated successfully"} if vaccinatedStatus is not None else {"data": None, "message": "Vaccinated status not updated"}
 
 
-class Dashboard:
-    def __init__(self):
-        pass
-    
-
-    def loginPrompt(self):
-        print("HMS Login")
-        username = input("Username: ")
-        password = input("Password: ")
-        usertype = input("Usertype (admin/receptionist/doctor/nurse): ")
-
-    def showHomepage(self):
-        print("Showing homepage")
-        print("1. Login")
-        
 
 
 
@@ -275,20 +282,29 @@ def main():
     doctor = Doctor()
     nurse = Nurse()
 
-    print(admin.login("admin", "admin123"))
+    dashboard = cli_dashboard.Dashboard(admin,receptionist,doctor,nurse,currentdate=day)
 
-    print(user_session)
+    dashboard.loginPrompt()
 
-    for user in temp_data.temporaryUsers:
-        addedStatus = admin.addUser(user)
-        print(addedStatus)
 
-    loginStatus = receptionist.login("receptinist01", "password")
-    print("receptionist login status: ", loginStatus)
+    # ====================UNCOMMENT THIS PART TO AUTOMATICALLY ADD SOME SAMPLE DATA========================
+    # print(admin.login("admin", "admin123"))
+    # print(admin.getUserSession())
 
-    for patient in temp_data.temporaryPatients:
-        addedStatus = receptionist.addPatient(patientData=patient)
-        print(addedStatus)
+    # print(user_session)
+
+    # for user in temp_data.temporaryUsers:
+    #     addedStatus = admin.addUser(user)
+    #     print(addedStatus)
+
+    # loginStatus = receptionist.login("receptinist01", "password")
+    # print("receptionist login status: ", loginStatus)
+
+    # for patient in temp_data.temporaryPatients:
+    #     addedStatus = receptionist.addPatient(patientData=patient)
+    #     print(addedStatus)
+    #=====================================================================================================
+
 
     # commit the changes
     conn.commit()

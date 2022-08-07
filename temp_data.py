@@ -36,8 +36,8 @@ temporaryUsers = [
         "phone": "12136783456"
     },
     {
-        "username": "Mia1989",
-        "fullname": "Mia Malkova",
+        "username": "Meena1989",
+        "fullname": "Meena Dave",
         "password": "password",
         "usertype": "nurse",
         "gender": "F",
@@ -48,17 +48,17 @@ temporaryUsers = [
 
 
 temporaryPatients = [
-    {"name": "Manuel Ferrara", "age": 47, "phone": "12349542789", "address": "LA",
+    {"name": "Manuel Simpson", "age": 47, "phone": "12349542789", "address": "LA",
         "gender": "M", "bloodgroup": "A+", "weight": 100, "height": 170, "date": "2022-08-06"},
-    {"name": "Jhonny Sins", "age": 45, "phone": "1234569842", "address": "Mexico",
+    {"name": "Jhonny Cardy", "age": 45, "phone": "1234569842", "address": "Mexico",
         "gender": "M", "bloodgroup": "B+", "weight": 100, "height": 170, "date": "2022-08-06"},
-    {"name": "Eva Elfie", "age": 19, "phone": "1294426789", "address": "UK", "gender": "F",
+    {"name": "Eva Smith", "age": 19, "phone": "1294426789", "address": "UK", "gender": "F",
         "bloodgroup": "O+", "weight": 60, "height": 130, "date": "2022-08-06"},
-    {"name": "Stacie Cruz", "age": 32, "phone": "12349642589", "address": "Ukraine",
+    {"name": "Stanley Ruth", "age": 32, "phone": "12349642589", "address": "Ukraine",
         "gender": "F", "bloodgroup": "AB-", "weight": 65, "height": 140, "date": "2022-08-06"},
     {"name": "Kenna James", "age": 29, "phone": "1294426789", "address": "Russia",
         "gender": "F", "bloodgroup": "A+", "weight": 72, "height": 160, "date": "2022-08-06"},
-    {"name": "Jason Luv", "age": 42, "phone": "1294426789", "address": "San Fransisco",
+    {"name": "Jason Brown", "age": 42, "phone": "1294426789", "address": "San Fransisco",
         "gender": "M", "bloodgroup": "O+", "weight": 120, "height": 185, "date": "2022-08-06"}
 
 ]

@@ -54,12 +54,19 @@ def removeUserByUsername(cursor, username):
     return False if cursor.rowcount == 0 else True
 
 
-def getAllUsers(cursor):
+def getAllUsers(cursor, usertype=None):
     # fetch all users
+
+    query = "select rowid,* from user"
+
+    if usertype is not None:
+        query += f" where usertype = '{usertype}'"
+    
+    query += ";"
+
+
     try:
-        cursor.execute(f"""
-        SELECT * FROM user;
-        """)
+        cursor.execute(query)
     except sqlite3.Error as e:
         print(e)
         return None
@@ -93,9 +100,17 @@ def getUserInfoByUsername(cursor, username):
     return cursor.fetchone()
 
 
-def updateUserByUsername(cursor, user={}):
+def updateUserByUsername(cursor,username=None,userid=None, user={}):
     # update user with userId reference
     # returns true / false
+
+    whereClause = ""
+
+    if username is not None:
+        whereClause += f"username = '{username}'"
+    elif userid is not None:
+        whereClause += f"rowid = {userid}"
+
     try:
         cursor.execute(f"""
             UPDATE user SET
@@ -105,7 +120,7 @@ def updateUserByUsername(cursor, user={}):
                 gender = '{user['gender']}',
                 age = {user['age']},
                 phone = '{user['phone']}'
-            WHERE username = '{user['username']}'
+            WHERE {whereClause};
             RETURNING *;
         """)
     except sqlite3.Error as e:
@@ -165,6 +180,18 @@ def findPatient(cursor, filter={}, limit=1):
 
     return cursor.fetchmany(limit)
 
+
+def getAllPatients(cursor):
+    # fetch all patients
+    try:
+        cursor.execute(f"""
+        SELECT rowid, * FROM patient;
+        """)
+    except sqlite3.Error as e:
+        print(e)
+        return None
+
+    return cursor.fetchall()
 
 def updatePatientById(cursor, patientID, patientData={}):
     # update patient with patientId reference
@@ -258,7 +285,7 @@ def getAvailableDoctors(cursor, date):
     try:
         cursor.execute(f"""
         SELECT * FROM user WHERE usertype = 'doctor' AND rowid NOT IN (
-            SELECT doctorID FROM appointment WHERE date = '{date}'
+            SELECT doctor_id FROM appointment WHERE date = '{date}'
         );
         """)
     except sqlite3.Error as e:
@@ -293,6 +320,7 @@ def makeAppointment(cursor, appointmentData={}):
                 {appointmentData['doctorID']},
                 '{appointmentData['date']}',
                 '{appointmentData['time']}',
+                '{appointmentData['symptoms']}',
                 '{appointmentData['status']}'
                 );
         """)
@@ -302,6 +330,18 @@ def makeAppointment(cursor, appointmentData={}):
 
     return cursor.lastrowid
 
+def getAllAppointments(cursor):
+    # fetch all appointments
+    try:
+        cursor.execute(f"""
+        SELECT rowid, * FROM appointment;
+        """)
+    except sqlite3.Error as e:
+        print(e)
+        return None
+
+    return cursor.fetchall()
+
 
 def getPatientsAppointedToDoctor(cursor, doctorID, patientID=None):
     # fetch all patients appointed to doctor
@@ -309,11 +349,11 @@ def getPatientsAppointedToDoctor(cursor, doctorID, patientID=None):
 
     query = f"""
         SELECT * FROM patient WHERE rowid IN (
-            SELECT patientID FROM appointment WHERE doctorID = {doctorID} 
+            SELECT patient_id FROM appointment WHERE doctor_id = {doctorID} 
     """
 
-    if patientID is not None:
-        query += f" AND patientID = {patientID}"
+    if patientID is not None and patientID != "":
+        query += f" AND rowid = {patientID}"
 
     query += ");"
 
@@ -328,12 +368,12 @@ def getPatientsAppointedToDoctor(cursor, doctorID, patientID=None):
 def getPatientMedicalRecords(cursor, patientID, doctorID, nurseID):
     # fetch all medical records of patient
     
-    query = f"SELECT rowid,* FROM medical_record WHERE patientID = {patientID}"
+    query = f"SELECT rowid,* FROM medical_record WHERE patient_id = {patientID}"
 
     if doctorID is not None:
-        query += f" AND doctorID = {doctorID}"
+        query += f" AND doctor_id = {doctorID}"
     if nurseID is not None:
-        query += f" AND nurseID = {nurseID}"
+        query += f" AND nurse_id = {nurseID}"
     
     query += ";"
 
@@ -352,7 +392,7 @@ def updatePrescription(cursor,patientID,doctorID,prescription):
     try:
         cursor.execute(f"""
             UPDATE medical_record SET prescription = '{prescription}'
-            WHERE patientID = {patientID} AND doctorID = {doctorID};
+            WHERE patient_id = {patientID} AND doctor_id = {doctorID};
         """)
     except sqlite3.Error as e:
         print(e)
@@ -387,8 +427,8 @@ def getAvailableNurses(cursor, date):
     # fetch all nurses
     try:
         cursor.execute(f"""
-        SELECT * FROM user WHERE usertype = 'nurse' AND rowid NOT IN (
-            SELECT nurseID FROM appointment WHERE date = '{date}'
+        SELECT rowid,fullname FROM user WHERE usertype = 'nurse' AND rowid NOT IN (
+            SELECT nurse_id FROM medical_record
         );
         """)
     except sqlite3.Error as e:
@@ -398,7 +438,7 @@ def getAvailableNurses(cursor, date):
     return cursor.fetchall()
 
 
-def setVaccinatedStatus(cursor, patientID, vaccinatedStatus):
+def setVaccinatedStatus(cursor, patientID, prescriptionID, vaccinatedStatus):
     # update vaccinated status of patient
     # returns true / false
 
@@ -407,7 +447,7 @@ def setVaccinatedStatus(cursor, patientID, vaccinatedStatus):
     try:
         cursor.execute(f"""
             UPDATE medical_record SET vaccinated = '{vaccinatedStatus}'
-            WHERE rowid = {patientID};
+            WHERE rowid = {prescriptionID} AND patientID = {patientID};
         """)
     except sqlite3.Error as e:
         print(e)
