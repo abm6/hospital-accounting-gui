@@ -7,7 +7,7 @@ class Dashboard:
     receptionist = None
     doctor = None
     nurse = None
-    currentdate=None
+    currentdate = None
 
     # function to clear the console
     def clearConsole(self): return os.system('cls'
@@ -46,17 +46,20 @@ class Dashboard:
             self.loginPrompt()
 
     def loginPrompt(self):
-        print("HMS Login")
-        username = input("Username: ")
-        password = input("Password: ")
+        self.clearConsole()
+        print("================================HMS Login================================")
         usertype = input(
-            "Usertype:  1.admin 2.receptionist 3.doctor 4.nurse\n: choice:")
+            "Usertype:  [ 1=admin | 2=receptionist | 3=doctor | 4=nurse ]\n: choice: ")
+      
 
         try:
             if int(usertype) < 1 or int(usertype) > 4:
                 self.loginUnsuccessful(message="Invalid usertype")
         except ValueError:
             self.loginUnsuccessful(message="Invalid usertype")
+
+        username = input("Username: ")
+        password = input("Password: ")
 
         usertype = self.usertypes[int(usertype)-1]
 
@@ -146,6 +149,8 @@ class Dashboard:
 
             if self.admin.addUser(newUser):
                 print("User added successfully")
+                self.admin.commitChanges()
+                self.continuePrompt()
             else:
                 print("User not added")
 
@@ -155,6 +160,7 @@ class Dashboard:
             foundUsers = self.admin.getAllUsers()
             headers = ["UserID", "Username", "Fullname",
                        "Password", "Usertype", "Gender", "Age", "Phone"]
+            print(foundUsers)
             print(tabulate(foundUsers, headers, tablefmt="grid"))
             self.continuePrompt()
 
@@ -213,7 +219,16 @@ class Dashboard:
         elif choice == "7":
             self.clearConsole()
 
+            userid = int(input("Enter UserID to get information: "))
+
+            
+
             foundUsers = self.admin.getAllUsers()
+
+            for user in foundUsers:
+                if user[0] == userid:
+                    foundUsers = [user]
+                    break
             headers = ["UserID", "Username", "Fullname",
                        "Password", "Usertype", "Gender", "Age", "Phone"]
             print(tabulate(foundUsers, headers, tablefmt="grid"))
@@ -221,41 +236,58 @@ class Dashboard:
 
         elif choice == "8":
             self.clearConsole()
-            print("Updating user by userId or username?")
-            print("1. UserId")
-            print("2. Username")
 
-            userid = None
-            username = None
+            print("listing all users")
+
+            foundUsers = self.admin.getAllUsers()
+
+            print("userID\tUsername")
+            for i in range(len(foundUsers)):
+                print(f"{foundUsers[i][0]}\t{foundUsers[i][1]}")
+
+            userid = input("Enter UserID of the user: ")
+
             isUpdated = False
 
-            choice = input("Choice: ")
-            if choice == "1":
-                userid = input("UserID: ")
-            elif choice == "2":
-                username = input("Username: ")
-            else:
-                print("Invalid choice")
-                self.continuePrompt()
+            newUserData = {"username": "",
+                           "fullname": "", 
+                           "password": "", 
+                           "usertype": "",
+                           "gender": "", 
+                           "age": 0, 
+                           "phone": ""}
 
             print("Enter new information")
 
-            newUserData = {"username": "",
-                           "fullname": "", "password": "", "usertype": "",
-                           "gender": "", "age": 0, "phone": ""}
+            newUserData['username'] = input("New Username: ")
+            firstname = input("New Firstname: ")
+            lastname = input("New Lastname: ")
+            newUserData['fullname'] = firstname.title() + " " + lastname.title()
+            newUserData['password'] = input("New Password: ")
 
-            for key in newUserData:
-                newUserData[key] = input(key + ": ")
+            usertype = input(
+            "Usertype:  [ 1=admin | 2=receptionist | 3=doctor | 4=nurse ]\n: choice: ")
+      
 
-            newUserData["age"] = int(newUserData["age"])
+            try:
+                if int(usertype) < 1 or int(usertype) > 4:
+                    self.loginUnsuccessful(message="Invalid usertype")
+            except ValueError:
+                self.loginUnsuccessful(message="Invalid usertype")
 
-            isUpdated = self.admin.updateUser(username=username,userid=userid, user=newUserData)
 
-            if isUpdated is not None:
+            newUserData['usertype'] = self.usertypes[int(usertype)-1]
+
+            newUserData['gender'] = input("Gender [M/F]: ")
+            newUserData['age'] = int(input("Age: "))
+            newUserData['phone'] = input("Phone: ")
+
+            
+            isUpdated = self.admin.updateUser(
+                userid=userid, update=newUserData)
+
+            if isUpdated:
                 print("User updated successfully")
-                headers = ["UserID", "Username", "Fullname",
-                           "Password", "Usertype", "Gender", "Age", "Phone"]
-                print(tabulate(isUpdated, headers, tablefmt="grid"))
                 self.continuePrompt()
             else:
                 print("User not updated")
@@ -272,7 +304,6 @@ class Dashboard:
                 print("Press any key to continue...")
                 input()
                 self.adminDashboard()
-
 
     def receptionistDashboard(self):
         self.clearConsole()
@@ -308,10 +339,10 @@ class Dashboard:
                 print(e)
                 print("Patient not added")
                 self.continuePrompt()
-            
+
             if self.receptionist.addPatient(newPatient):
                 print("Patient added successfully")
-            else:   
+            else:
                 print("Patient not added")
             self.continuePrompt()
 
@@ -325,20 +356,38 @@ class Dashboard:
 
         elif choice == "3":
             self.clearConsole()
-            foundDoctors = self.receptionist.fetchAvailableDoctors()
+            date = input("On Which date (YYYY-MM-DD)? ")
+            foundDoctors = self.receptionist.fetchAvailableDoctors(date)
 
             if(foundDoctors is not None):
-                headers = ["DoctorID", "Username", "Fullname",
-                        "Password", "Usertype", "Gender", "Age", "Phone"]
-                print(foundDoctors)
+                print("ID\tName")
+                for i in range(len(foundDoctors['data'])):
+                    print(f"{foundDoctors['data'][i][0]}\t{foundDoctors['data'][i][2]}")
                 self.continuePrompt()
             else:
                 print("No doctors available")
                 self.continuePrompt()
-            
+
         elif choice == "4":
             self.clearConsole()
             appointmentData = {}
+
+            print("------------------Patients----------------- ")
+            print("ID\tName")
+            foundPatients = self.admin.getAllPatients()
+            for patient in foundPatients:
+                print(f"{patient[0]}\t{patient[1]}")
+
+            
+            print("------------------Doctors----------------- ")
+            foundDoctors = self.receptionist.fetchAvailableDoctors()
+
+            if(foundDoctors is not None):
+                print("ID\tName")
+                for i in range(len(foundDoctors['data'])):
+                    print(f"{foundDoctors['data'][i][0]}\t{foundDoctors['data'][i][2]}")
+            else:
+                print("No doctors available")
 
             try:
                 appointmentData['patientid'] = int(input("PatientID: "))
@@ -346,16 +395,18 @@ class Dashboard:
                 appointmentData['date'] = input("Date: [YYYY-MM-DD] ")
                 appointmentData['time'] = input("Time: ")
                 appointmentData['symptoms'] = input("Symptoms: ")
-            
+
             except Exception as e:
                 print(e)
                 print("Incorrect input")
                 self.continuePrompt()
 
-            appointment = self.receptionist.makeAppointment()
+            appointment = self.receptionist.makeAppointment(appointmentData=appointmentData)
             if appointment is not None:
                 print("Appointment made successfully")
                 print("AppointmentID: " + str(appointment['data']))
+
+                self.receptionist.commitChanges()
             else:
                 print("Appointment not made")
             self.continuePrompt()
@@ -363,7 +414,8 @@ class Dashboard:
         elif choice == "5":
             self.clearConsole()
             foundAppointments = self.receptionist.getAllAppointments()
-            headers = ["AppointmentID", "PatientID", "DoctorID", "Date", "Time", "Symptoms"]
+            headers = ["Appt.ID", "Recept.ID", "Pat.ID",
+                       "Doc.ID", "Date", "Time", "Symptoms","Status"]
             print(tabulate(foundAppointments, headers, tablefmt="grid"))
             self.continuePrompt()
 
@@ -372,15 +424,17 @@ class Dashboard:
             patientid = input("PatientID: ")
             if self.receptionist.removePatientById(patientid):
                 print("Patient removed successfully")
+                self.receptionist.commitChanges()
             else:
                 print("Patient not removed")
             self.continuePrompt()
 
         elif choice == "7":
             self.clearConsole()
-            patientid = input("PatientID: ")
-            foundPatient = self.receptionist.getPatientById(patientid)
-            headers = ["PatientID", "Name", "Age", "Phone", "Address", "Gender", "Bloodgroup", "Weight", "Height", "Date"]
+            patientid = int(input("PatientID: "))
+            foundPatient = self.receptionist.getPatientInfoById(patientid)
+            headers = ["PatientID", "Name", "Age", "Phone", "Address",
+                       "Gender", "Bloodgroup", "Weight", "Height", "Date"]
             print(tabulate(foundPatient, headers, tablefmt="grid"))
             self.continuePrompt()
 
@@ -402,8 +456,9 @@ class Dashboard:
             newPatientData['date'] = self.currentdate
 
             filter = {"patientid": patientid}
-            if self.receptionist.updatePatient(filter, newPatientData):
+            if self.receptionist.updatePatientById(patientid,patientData=newPatientData):
                 print("Patient updated successfully")
+                self.receptionist.commitChanges()
             else:
                 print("Patient not updated")
             self.continuePrompt()
@@ -420,7 +475,6 @@ class Dashboard:
                 input()
                 self.receptionistDashboard()
 
-
     def doctorDashboard(self):
         self.clearConsole()
         print("Showing Doctor page")
@@ -435,9 +489,12 @@ class Dashboard:
         if choice == "1":
             self.clearConsole()
             foundPatients = self.doctor.getPatientsAppointed()
-            print(foundPatients['data'])
+            print("pat.ID\tName")
+            for patient in foundPatients['data']:
+                print(f"{patient[0]}\t{patient[1]}")
+
             self.continuePrompt()
-        
+
         elif choice == "2":
             self.clearConsole()
             foundNurses = self.doctor.getAvailableNurses()
@@ -446,16 +503,24 @@ class Dashboard:
             if(foundNurses is not None):
                 print(tabulate(foundNurses, headers, tablefmt="grid"))
             self.continuePrompt()
-        
+
         elif choice == "3":
             self.clearConsole()
+
+            print("patients list")
+            foundPatients = self.doctor.getPatientsAppointed()
+            print("pat.ID\tName")
+            for patient in foundPatients['data']:
+                print(f"{patient[0]}\t{patient[1]}")
+
             print("showing patient medical history")
-            patientid = input("PatientID: ")
+            patientid = int(input("PatientID: "))
 
             medicalRecords = self.doctor.getMedicalRecords(patientID=patientid)
 
-            if medicalRecords is not None:
-                print(medicalRecords['data'])
+            if medicalRecords is not None and len(medicalRecords['data']) > 0:
+                headers = ["PatientID", "DoctorID","NurseID","prescription", "Operation", "remarks","demographics","injection","Vaccinated"]
+                print(tabulate(medicalRecords['data'], headers, tablefmt="grid"))
             else:
                 print("No medical records found")
             self.continuePrompt()
@@ -465,9 +530,25 @@ class Dashboard:
             print("Updating patient medical report")
             medicalRecordData = {}
 
+            foundPatients = self.doctor.getPatientsAppointed()
+            print("------------------Patients----------------- ")
+            print("pat.ID\tName")
+            for patient in foundPatients['data']:
+                print(f"{patient[0]}\t{patient[1]}")
+
+            print("----------------Nurses----------------- ")
+            foundNurses = self.doctor.getAvailableNurses()
+            headers = ["NurseID", "Name"]
+
+            if(foundNurses is not None):
+                print(tabulate(foundNurses, headers, tablefmt="grid"))
+
+            print("UPDATE MEDICAL RECORD:")
+
             try:
                 medicalRecordData['patient_id'] = int(input("PatientID: "))
-                medicalRecordData['doctor_id'] = self.doctor.getUserSession()['id']
+                medicalRecordData['doctor_id'] = self.doctor.getUserSession()[
+                    'id']
                 medicalRecordData['nurse_id'] = int(input("NurseID: "))
                 medicalRecordData['prescription'] = input("Prescription: ")
                 medicalRecordData['operation'] = input("Operation: ")
@@ -479,11 +560,15 @@ class Dashboard:
                 print(e)
                 print("Incorrect input")
                 self.continuePrompt()
-            
-            updatedMedicalRecord = self.doctor.createOrUpdateMedicalRecord(medicalRecordData)
+
+            updatedMedicalRecord = self.doctor.createOrUpdateMedicalRecord(
+                medicalRecordData)
             if updatedMedicalRecord is not None:
-                print("Medical record updated successfully")
-                print("Medical recordID: " + str(updatedMedicalRecord['data']))
+                print(updatedMedicalRecord['message'])
+                print(updatedMedicalRecord['data'])
+                self.doctor.commitChanges()
+                self.continuePrompt()
+
             else:
                 print("Medical record not updated")
             self.continuePrompt()
@@ -501,37 +586,72 @@ class Dashboard:
                 input()
                 self.doctorDashboard()
 
-
     def nurseDashboard(self):
         self.clearConsole()
         print("Showing Nurse page")
-        print("1. Show all patient medical records under me")
-        print("2. Set Vaccination Status")
-        print("3. Logout")
+        print("1. Show all patient under me")
+        print("2. Show Patient medical record")
+        print("3. Set Vaccination Status")
+        print("4. Logout")
 
         choice = input("Choice: ")
 
         if choice == "1":
             self.clearConsole()
-            foundMedicalRecords = self.nurse.getPatientMedicalRecords()
-            headers = ["MedicalRecordID", "PatientID", "DoctorID", "NurseID", "Prescription", "Operation", "Remarks", "Demographics", "Injection", "Date"]
-            print(tabulate(foundMedicalRecords['data'], headers, tablefmt="grid"))
-            self.continuePrompt()
-        
+            foundMedicalRecords = self.nurse.getPatientsAppointed()
+
+            if foundMedicalRecords['data'] is not None:
+                print(foundMedicalRecords['message'])
+
+                headers = ["PatientID", "Name"]
+                print(tabulate(foundMedicalRecords['data'], headers, tablefmt="grid"))
+                
+                self.continuePrompt()
+
+            else:
+                print(foundMedicalRecords['message'])
+                self.continuePrompt()
+
         elif choice == "2":
             self.clearConsole()
+            print("Showing patient medical record")
+            patientid = int(input("PatientID: "))
+
+            medicalRecords = self.nurse.getPatientMedicalRecords(patientID=patientid)
+
+            if medicalRecords['data'] is not None and len(medicalRecords['data']) > 0:
+                headers = ["PatientID", "DoctorID","NurseID","prescription", "Operation", "remarks","demographics","injection","Vaccinated"]
+                print(tabulate(medicalRecords['data'], headers, tablefmt="grid"))
+            else:
+                print("No medical records found")
+            self.continuePrompt()
+
+        elif choice == "3":
+            self.clearConsole()
+
+            medicalRecords = self.nurse.getPatientMedicalRecords(patientID=None)
+
+            if medicalRecords['data'] is not None and len(medicalRecords['data']) > 0:
+                for record in medicalRecords['data']:
+                    print("Prescp.ID\tPat.ID\tVaccinated")
+                    print(f"{record[0]}\t\t{record[1]}\t{record[9]}")
+                    
+
+
             print("Setting vaccination status")
             patientID = input("PatientID: ")
             prescriptionID = input("PrescriptionID (MedicalRecordID): ")
 
-            isVaccinated = input("Vaccination Status [Y/N]: ")
-            if self.nurse.setVaccinationStatus(patientID, prescriptionID, isVaccinated):
-                print("Vaccination status updated successfully")
+            vaccinationStatus = input("Vaccinated: [y/n] ")
+            vaccinationStatus = 1 if vaccinationStatus == "y" or vaccinationStatus == "Y" else 0
+            if self.nurse.setVaccinatedStatus(patientID, prescriptionID, vaccinationStatus)['data']:
+                print("Vaccination status set")
+                self.nurse.commitChanges()
             else:
                 print("Vaccination status not updated")
             self.continuePrompt()
-        
-        elif choice == "3":
+
+        elif choice == "4":
             self.clearConsole()
             if self.nurse.logout():
                 print("Logout successful")
@@ -543,17 +663,3 @@ class Dashboard:
                 print("Press any key to continue...")
                 input()
                 self.nurseDashboard()
-
-
-        
-
-
-
-        
-
-        
-            
-
-
-
-

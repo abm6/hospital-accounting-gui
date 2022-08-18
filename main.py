@@ -25,8 +25,6 @@ user_session = {
 
 
 
-
-
 class User:
     def __init__(self):
         pass
@@ -61,6 +59,10 @@ class User:
         user_session["usertype"] = usertype
         user_session["id"] = id
 
+    def commitChanges(self):
+        conn.commit()
+
+
 class Admin(User):
     def __init__(self):
         pass
@@ -93,23 +95,35 @@ class Admin(User):
 
     def getAllUsers(self,usertype=None):
         # fetch all users
-        return transactions.getAllUsers(cursor,usertype)
+
+        allFoundUsers = transactions.getAllUsers(cursor,usertype)
+        if(allFoundUsers != None):
+            for i in range(len(allFoundUsers)):
+                allFoundUsers[i] = list(allFoundUsers[i])
+                allFoundUsers[i][3] = '*'*len(allFoundUsers[i][3])
+
+
+        return allFoundUsers
 
     def getAllPatients(self):
         # fetch all patients
         return transactions.getAllPatients(cursor)
 
 
-    def updateUser(self,username=None,userid=None, user={}):
+    def updateUser(self,username=None,userid=None, update={}):
         # update user with userId reference
         # returns Updated user data if any changes else returns false
 
-        userBeforeUpdate = self.getUserInfo(username)
+        userBeforeUpdate = None
+        if(username):
+            userBeforeUpdate = self.getUserInfo(userID=None, username=username)
+        elif(userid):
+            userBeforeUpdate = self.getUserInfo(userID=userid, username=None)
 
 
-        updatedUser = transactions.updateUserByUsername(cursor,username=username,userid=userid, user=user)
+        updatedUser = transactions.updateUserByUsername(cursor,username=username,userid=userid, update=update)
 
-        return updatedUser if updatedUser != userBeforeUpdate else None
+        return updatedUser
 
 
 class Receptionist(User):
@@ -163,15 +177,19 @@ class Receptionist(User):
         return {"data": foundPatient, "message": "Patient removed successfully"} if isPatientRemoved else {"data": None, "message": "Patient not found"}
 
     def makeAppointment(self, appointmentData={}):
-        appointment = transactions.makeAppointment(appointmentData)
+        appointmentData['receptionistid'] = user_session['id']
+        appointmentData['status'] = 'pending'
+        appointment = transactions.makeAppointment(cursor, appointmentData)
         return {"data": appointment, "message": "Appointment made successfully"} if appointment is not None else {"data": None, "message": "Appointment not made"}
 
     def getAllAppointments(self):
         return transactions.getAllAppointments(cursor)
 
     
-    def fetchAvailableDoctors(self):
-        availableDoctors = transactions.getAvailableDoctors(cursor,day)
+    def fetchAvailableDoctors(self,date=None):
+        if(date is None or date == ''):
+            date = day
+        availableDoctors = transactions.getAvailableDoctors(cursor,date)
 
         if availableDoctors is not None and len(availableDoctors) > 0:
             return {"data": availableDoctors, "message": "Doctors fetched successfully"}
@@ -231,10 +249,11 @@ class Doctor(User):
         # can contain schedules of patients for nurses
         # returns boolean
 
-        medicalRecordData['doctorID'] = user_session['id']
+        medicalRecordData['doctor_id'] = user_session['id']
+        medicalRecordData['vaccinated'] = 0
 
         isUpdated = transactions.updateMedicalRecord(cursor, medicalRecordData)
-        return {"data": isUpdated, "message": "Prescription updated successfully"} if isUpdated else {"data": None, "message": "Prescription not updated"}
+        return {"data": isUpdated, "message": "Prescription updated successfully"} if isUpdated != False else {"data": False, "message": "Prescription not updated"}
 
 
 class Nurse(User):
@@ -244,8 +263,16 @@ class Nurse(User):
     def login(self, username, password):
         return super().login(username, password, "nurse")
 
-    def getPatientMedicalRecords(self):
+    def getPatientsAppointed(self):
+        patients = transactions.getPatientsAppointedToNurse(cursor, nurseID=user_session['id'])
+        return {"data": patients, "message": "These are the patients appointed"} if patients is not None else {"data": None, "message": "No patients appointed"}
+
+    def getPatientMedicalRecords(self,patientID):
         # return list
+        # returns list of prescriptions, prescriptionID along with their details
+        medicalRecords = transactions.getPatientMedicalRecords(
+            cursor, patientID=patientID, doctorID=None, nurseID=user_session['id'])
+        return {"data": medicalRecords, "message": "These are the medical records"} if medicalRecords is not None else {"data": None, "message": "No medical records"}
 
         return transactions.getPatientMedicalRecords(cursor, nurseID=user_session['id'])
 
@@ -268,10 +295,12 @@ class Nurse(User):
 
 def main():
     # create connection
+
+    global conn
     conn = schemas.create_connection('hospital')
     # Create a cursor
-    global cursor
 
+    global cursor
     cursor = conn.cursor()
     # create tables
     schemas.create_tables(cursor)
@@ -282,12 +311,8 @@ def main():
     doctor = Doctor()
     nurse = Nurse()
 
-    dashboard = cli_dashboard.Dashboard(admin,receptionist,doctor,nurse,currentdate=day)
-
-    dashboard.loginPrompt()
-
-
     # ====================UNCOMMENT THIS PART TO AUTOMATICALLY ADD SOME SAMPLE DATA========================
+    
     # print(admin.login("admin", "admin123"))
     # print(admin.getUserSession())
 
@@ -303,7 +328,31 @@ def main():
     # for patient in temp_data.temporaryPatients:
     #     addedStatus = receptionist.addPatient(patientData=patient)
     #     print(addedStatus)
+
+    # conn.commit()
+
     #=====================================================================================================
+
+
+
+    dashboard = cli_dashboard.Dashboard(admin,receptionist,doctor,nurse,currentdate=day)
+
+    dashboard.loginPrompt()
+
+
+    # updatedUserData = {
+    #     "username": "kal",
+    #     "password": "kal123",
+    #     "fullname": "Kal",
+    #     "gender" : "M",
+    #     "usertype": "doctor",
+    #     "age" : 14,
+    #     "phone": "1234567890",
+    # }
+
+    # admin.setUserSession("admin", "admin", 1)
+    # status = admin.updateUser(userid=8,update=updatedUserData)
+    # print(status)
 
 
     # commit the changes
