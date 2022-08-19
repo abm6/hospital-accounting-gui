@@ -108,6 +108,7 @@ def updateUserByUsername(cursor,username=None,userid=None, update={}):
     try:
         cursor.execute(f"""
             UPDATE user SET
+                username = '{update['username']}',
                 fullname = '{update['fullname']}',
                 password = '{update['password']}',
                 usertype = '{update['usertype']}',

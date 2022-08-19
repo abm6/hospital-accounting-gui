@@ -97,10 +97,10 @@ class Admin(User):
         # fetch all users
 
         allFoundUsers = transactions.getAllUsers(cursor,usertype)
-        if(allFoundUsers != None):
-            for i in range(len(allFoundUsers)):
-                allFoundUsers[i] = list(allFoundUsers[i])
-                allFoundUsers[i][3] = '*'*len(allFoundUsers[i][3])
+        # if(allFoundUsers != None):
+        #     for i in range(len(allFoundUsers)):
+        #         allFoundUsers[i] = list(allFoundUsers[i])
+        #         allFoundUsers[i][3] = '*'*len(allFoundUsers[i][3])
 
 
         return allFoundUsers

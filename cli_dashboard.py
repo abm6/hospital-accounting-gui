@@ -160,7 +160,6 @@ class Dashboard:
             foundUsers = self.admin.getAllUsers()
             headers = ["UserID", "Username", "Fullname",
                        "Password", "Usertype", "Gender", "Age", "Phone"]
-            print(foundUsers)
             print(tabulate(foundUsers, headers, tablefmt="grid"))
             self.continuePrompt()
 
@@ -460,7 +459,7 @@ class Dashboard:
                 print("Patient updated successfully")
                 self.receptionist.commitChanges()
             else:
-                print("Patient not updated")
+                print("Patient updated successfully")
             self.continuePrompt()
 
         elif choice == "9":
