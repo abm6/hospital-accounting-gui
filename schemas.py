@@ -2,21 +2,25 @@ import sqlite3
 import os
 
 # create the database directory if does not exist
-if not os.path.exists('db'):
-    os.mkdir('db')
+if not os.path.exists("db"):
+    os.mkdir("db")
 
 
 def create_connection(db_file):
-    """ create a database connection to the SQLite database
+    """create a database connection to the SQLite database
         specified by the db_file
     :param db_file: database file
     :return: Connection object or None
     """
     conn = None
     try:
-        conn = sqlite3.connect(f'./db/{db_file}.db')
-    except Error as e:
+        conn = sqlite3.connect(f"./db/{db_file}.db")
+    except Exception as e:
         print(e)
+        print("This is a sample exception for this case:")
+
+        for i in range(10):
+            print("test", i)
 
     return conn
 
@@ -26,7 +30,8 @@ def create_tables(cursor):
     # the unique ROW ID gets assigned for each patient
     # When the account gets created
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS patient(
             name TEXT NOT NULL,
             age INTEGER NOT NULL,
@@ -38,11 +43,13 @@ def create_tables(cursor):
             height INTEGER,
             date DATE
         );
-    """)
+    """
+    )
 
     # only one admin can make add or make someone admin
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS user(
             username VARCHAR(20) NOT NULL,
             fullname VARCHAR(20) NOT NULL,
@@ -54,11 +61,13 @@ def create_tables(cursor):
             CONSTRAINT usertype CHECK (usertype IN ('doctor', 'nurse', 'receptionist', 'admin')),
             UNIQUE(username)
         );
-    """)
+    """
+    )
 
     # adding a default admin
 
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT OR IGNORE INTO user VALUES(
             'admin',
             'Administrator',
@@ -68,9 +77,11 @@ def create_tables(cursor):
             0,
             ''
         );
-    """)
+    """
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS appointment(
             receptionist_id INTEGER NOT NULL,
             patient_id INTEGER NOT NULL,
@@ -84,9 +95,11 @@ def create_tables(cursor):
             CONSTRAINT doctor_id FOREIGN KEY (doctor_id) REFERENCES user(rowid),
             CONSTRAINT receptionist_id FOREIGN KEY (receptionist_id) REFERENCES user(rowid)
         );
-    """)
+    """
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS medical_record(
             patient_id INTEGER NOT NULL,
             doctor_id INTEGER NOT NULL,
@@ -100,6 +113,7 @@ def create_tables(cursor):
             CONSTRAINT patient_id FOREIGN KEY (patient_id) REFERENCES patient(rowid), 
             CONSTRAINT doctor_id FOREIGN KEY (doctor_id) REFERENCES user(rowid)
         );
-    """)
+    """
+    )
 
     print("Tables created")
